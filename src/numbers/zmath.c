@@ -145,7 +145,10 @@ znum_op_def(sub)
     if (a.len == b.len) {
         Half *p1 = a.v;
         Half *p2 = b.v;
-        while ((len1 > 0) && (* ++p1 == * ++p2)) {
+
+        while ((len1 > 0) && (*p1 == *p2)) {
+            p1++;
+            p2++;
             len1--;
         }
 
@@ -153,7 +156,6 @@ znum_op_def(sub)
             return znum_zero();
         }
 
-        len2 = len1;
         carry = (*p1 < *p2);
     } else {
         carry = (len1 < len2);
