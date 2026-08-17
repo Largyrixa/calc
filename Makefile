@@ -1,7 +1,9 @@
 # Thanks to Job Vranish (https://spin.atomicobject.com/2016/08/26/makefile-c-projects/)
 TARGET_EXEC := calc
+TARGET_EXEC_DBG := calc_dbg
 
 BUILD_DIR := ./build
+DBG_DIR := $(addprefix $(BUILD_DIR),/debug)
 SRC_DIRS := ./src
 
 # Find all the C and C++ files we want to compile
@@ -11,6 +13,7 @@ SRCS := $(shell find $(SRC_DIRS) -name '*.c' -or -name '*.s')
 # Prepends BUILD_DIR and appends .o to every src file
 # As an example, ./your_dir/hello.cpp turns into ./build/./your_dir/hello.cpp.o
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+DBG_OBJS := $(SRCS:%=$(DBG_DIR)/%.o)
 
 # String substitution (suffix version without %).
 # As an example, ./build/hello.cpp.o turns into ./build/hello.cpp.d
@@ -23,29 +26,46 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # The -MMD and -MP flags together generate Makefiles for us!
 # These files will have .d instead of .o as the output.
-CPPFLAGS := $(INC_FLAGS) -MMD -MP -O3
+CPPFLAGS := $(INC_FLAGS) -MMD -MP
+LDFLAGS := -lm
 
-.PHONY: all
-.DELETE_ON_ERROR: all
-all: $(BUILD_DIR)/$(TARGET_EXEC)
+CC := gcc
+
+.PHONY: debug
+.DELETE_ON_ERROR: debug
+debug: $(BUILD_DIR)/$(TARGET_EXEC_DBG)
+
+.PHONY: optimized
+.DELETE_ON_ERROR: optimized
+optimized: $(BUILD_DIR)/$(TARGET_EXEC)
+
 
 # The final build step.
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+
+# Final debug build step
+$(BUILD_DIR)/$(TARGET_EXEC_DBG): $(DBG_OBJS)
+	$(CC) $(DBG_OBJS) -o $@ $(LDFLAGS)
 
 # Build step for C source
 $(BUILD_DIR)/%.c.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+# Build step for debugging
+$(DBG_DIR)/%.c.o: %.c
+	mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Wall -g -c $< -o $@
+
 # Build step for C++ source
 #$(BUILD_DIR)/%.cpp.o: %.cpp
 #	mkdir -p $(dir $@)
 #	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-.PHONY: run
-run: all
-	@$(BUILD_DIR)/$(TARGET_EXEC)
+#.PHONY: run
+#run: all
+#	@$(BUILD_DIR)/$(TARGET_EXEC)
 
 .PHONY: clean
 clean:
